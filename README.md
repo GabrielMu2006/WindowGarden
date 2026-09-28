@@ -3,6 +3,8 @@
 一个 macOS 桌面陪伴应用：**桌面上的一个 WidgetKit 小组件**，一座随你的使用状态慢慢生长的手绘小花园。
 产品规格见 [SPEC.md](SPEC.md)，插画生成记录与换装指南见 [ART_PROMPTS.md](ART_PROMPTS.md)。
 
+![组件形态预览](docs/preview.png)
+
 ## 架构
 
 - **菜单栏引擎**（WindowGarden.app，无 Dock 图标）：常驻后台，测量你的活跃时长、推进植物生长、记录离开/回归，并把变化推送给组件。它是花园唯一的计时器。
@@ -26,6 +28,7 @@ open /Applications/WindowGarden.app   # 启动引擎（菜单栏出现叶子图�
 - **生长**：持续使用电脑时植物缓慢生长（每累计约 8 活跃小时推进最幼的一株一个阶段，共 4 阶段）；植物永不枯萎。
 - **昼夜**：跟随本地时间（清晨 05:30 / 白天 08:00 / 黄昏 17:30 / 夜晚 19:30），夜晚有星星、萤火虫与月见草柔光。
 - **访客**：你离开约 5 分钟后，组件里会出现小动物；回来后它们散去。
+- **小尺寸**自动展示最成熟的 3 株（夜晚会换上会发光的月见草）；**中尺寸**展示全部 6 株。
 - **菜单栏**：`刷新组件`、`开机自动启动`、`关于`、`退出`（退出＝花园暂停生长）。
 
 ## 插画与换装
@@ -40,16 +43,24 @@ open /Applications/WindowGarden.app   # 启动引擎（菜单栏出现叶子图�
 
 从菜单栏点「刷新组件」即可请求更新，无需改代码。删除 `~/Library/Application Support/WindowGarden/state.json` 可重置花园。
 
-## 开发调试参数（引擎）
+## 开发
 
 ```sh
-.build/release/WindowGarden --no-autolaunch     # 不注册登录项
-.build/release/WindowGarden --growth-x 86400    # 加速生长（每秒注入 24h 活跃时长）
-.build/release/WindowGarden --debug             # 每 5 秒输出心跳日志（stderr）
-WG_STATE_DIR=/tmp/wg_test ...                   # 隔离状态目录
+swift run GardenPreview                          # 离屏渲染各尺寸×各时段的组件形态预览图
+.build/release/WindowGarden --no-autolaunch      # 不注册登录项
+.build/release/WindowGarden --growth-x 86400     # 加速生长（每秒注入 24h 活跃时长）
+.build/release/WindowGarden --debug              # 每 5 秒输出心跳日志（stderr）
+WG_STATE_DIR=/tmp/wg_test make_app.sh …          # 隔离状态目录
 ```
 
-改完代码重新体验：`./scripts/make_app.sh && open build/WindowGarden.app`（若组件已在桌面，重新打包注册后系统会自动用新扩展渲染）。
+改完代码重新体验：`./scripts/make_app.sh --install`（swift 脚本调试可直接 `swift build`，但发布组件必须走 xcodebuild）。
+
+### 关键实测结论（macOS 26）
+
+- 全局空闲查询（`CGEventSource.secondsSinceLastEventType`）不需要任何系统权限
+- 组件扩展**必须沙盒化**才会被系统组件门禁收录（未沙盒的扩展被静默忽略）
+- 组件库只收录 **/Applications** 标准位置的应用
+- **SwiftPM（`swift build`）直接产出的组件扩展会被系统静默拒绝**——必须经 Xcode/xcodebuild 构建（本仓库因此采用 `.xcodeproj` + 引用本地 SwiftPM 包的混合结构）
 
 ## 卸载
 

@@ -1,15 +1,21 @@
 import SwiftUI
-import GardenCore
 
 /// 花园场景渲染：小/中两种尺寸共用，按组件高度自适应缩放。
 /// 组件是系统渲染的静态快照（无逐帧动画），萤火虫/星星位置由日期确定。
-struct GardenScene: View {
-    let date: Date
-    let plants: [PlantView]
-    let slotFractions: [Double]
-    let visitor: VisitorSpecies?
+public struct GardenScene: View {
+    public let date: Date
+    public let plants: [PlantView]
+    public let slotFractions: [Double]
+    public let visitor: VisitorSpecies?
 
-    var body: some View {
+    public init(date: Date, plants: [PlantView], slotFractions: [Double], visitor: VisitorSpecies? = nil) {
+        self.date = date
+        self.plants = plants
+        self.slotFractions = slotFractions
+        self.visitor = visitor
+    }
+
+    public var body: some View {
         GeometryReader { geo in
             let w = geo.size.width
             let h = geo.size.height
@@ -122,9 +128,9 @@ struct GardenScene: View {
                         RGB(0xFF, 0xED, 0xA8).color.opacity(0.55),
                         RGB(0xFF, 0xED, 0xA8).color.opacity(0),
                     ], center: .center, startRadius: 2, endRadius: 40 * scale))
-                    .frame(width: 80 * scale, height: 80 * scale)
+                    .frame(width: 100 * scale, height: 100 * scale)
                     .opacity(pal.glowOpacity)
-                    .position(x: x, y: baseY - 14 * scale)
+                    .position(x: x, y: baseY - 20 * scale)
             }
         }
     }
@@ -134,7 +140,14 @@ struct GardenScene: View {
     private func ground(_ pal: Palette, w: CGFloat, h: CGFloat, groundHeight: CGFloat) -> some View {
         Group {
             if let img = ImageStore.image("bg.ground") {
-                Image(nsImage: img).resizable().frame(width: w, height: groundHeight)
+                // 地面插画底缘不规则（有机撕裂边），下半部垫同系土壤色避免透出天空
+                ZStack(alignment: .bottom) {
+                    Rectangle().fill(RGB(0xA6, 0x7E, 0x55).color)
+                        .frame(height: groundHeight * 0.55)
+                    Image(nsImage: img).resizable().frame(width: w, height: groundHeight)
+                }
+                .frame(width: w, height: groundHeight)
+                .clipped()
             } else {
                 ZStack(alignment: .top) {
                     Rectangle().fill(pal.soil.color)
@@ -183,8 +196,8 @@ struct GardenScene: View {
         ForEach(Array(plants.enumerated()), id: \.element.id) { index, p in
             let species = p.species
             let stageIndex = max(0, min(3, p.stage - 1))
-            let rawHeight = GrowthConfig.stageHeights[stageIndex] * CGFloat(species.heightFactor) * scale * 1.15
-            let height = min(rawHeight, 80 * scale)
+            let rawHeight = GrowthConfig.stageHeights[stageIndex] * CGFloat(species.heightFactor) * scale * 1.35
+            let height = min(rawHeight, 92 * scale)
             let fraction = slotFractions[min(index, slotFractions.count - 1)]
             let x = CGFloat(fraction) * w
             let y = baseY - height / 2
@@ -204,7 +217,7 @@ struct GardenScene: View {
     @ViewBuilder
     private func visitorLayer(w: CGFloat, h: CGFloat, baseY: CGFloat, scale: CGFloat) -> some View {
         if let visitor {
-            let height = visitor.height * scale * 0.9
+            let height = visitor.height * scale * 1.15
             let x = w * 0.9
             Group {
                 if let img = ImageStore.image("animal.\(visitor.rawValue)") {

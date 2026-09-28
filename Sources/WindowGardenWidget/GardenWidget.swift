@@ -72,10 +72,11 @@ struct GardenWidgetEntryView: View {
                             slotFractions: GrowthConfig.slotX,
                             visitor: entry.snapshot.visitor)
             default:
-                // 小尺寸：展示前三株植物
+                // 小尺寸：最成熟的前 3 株；夜晚换入会发光的月见草
                 let fractions = [0.28, 0.52, 0.76]
+                let night = Phase.current(at: entry.date) == .night
                 GardenScene(date: entry.date,
-                            plants: Array(entry.snapshot.plants.prefix(fractions.count)),
+                            plants: PlantShowcase.smallSelection(from: entry.snapshot.plants, night: night),
                             slotFractions: fractions,
                             visitor: entry.snapshot.visitor)
             }

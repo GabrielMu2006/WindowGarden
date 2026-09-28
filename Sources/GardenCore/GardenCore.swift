@@ -108,6 +108,24 @@ public struct PlantView: Identifiable {
     }
 }
 
+public enum PlantShowcase {
+    /// 小尺寸组件的选株策略：优先展示最成熟的 3 株（同阶段取槽位靠前）；
+    /// 夜晚强制换入会发光的月见草，让小尺寸也有夜景看点。
+    public static func smallSelection(from plants: [PlantView], night: Bool) -> [PlantView] {
+        let sorted = plants.sorted { a, b in
+            a.stage == b.stage ? a.slot < b.slot : a.stage > b.stage
+        }
+        var picked = Array(sorted.prefix(3))
+        if night,
+           let moon = plants.first(where: { $0.species.glowsAtNight }),
+           !picked.contains(where: { $0.species.glowsAtNight }) {
+            picked[picked.count - 1] = moon
+            picked.sort { $0.slot < $1.slot }
+        }
+        return picked
+    }
+}
+
 // MARK: - 持久化状态
 
 public struct PlantRecord: Codable {
@@ -167,16 +185,25 @@ public enum Store {
     /// 首次启动时安装随应用打包的插画；已有文件视为用户自定义资源，不覆盖。
     public static func installBundledArt(from bundle: Bundle) {
         ensureDirs()
-        guard let sourceDir = bundle.resourceURL?.appendingPathComponent("Art", isDirectory: true),
-              let files = try? FileManager.default.contentsOfDirectory(at: sourceDir, includingPropertiesForKeys: nil) else {
-            wglog("未找到内置插画目录")
+        // 兼容两种打包布局：Resources/Art/ 子目录（脚本打包）或资源扁平化在 Resources 根（Xcode 同步组）
+        let fm = FileManager.default
+        var candidates: [URL] = []
+        if let sourceDir = bundle.resourceURL?.appendingPathComponent("Art", isDirectory: true),
+           fm.fileExists(atPath: sourceDir.path) {
+            candidates = (try? fm.contentsOfDirectory(at: sourceDir, includingPropertiesForKeys: nil)) ?? []
+        } else if let root = bundle.resourceURL {
+            candidates = ((try? fm.contentsOfDirectory(at: root, includingPropertiesForKeys: nil)) ?? [])
+                .filter { $0.pathExtension == "png" || $0.lastPathComponent == "manifest.json" }
+        }
+        guard !candidates.isEmpty else {
+            wglog("未找到内置插画资源")
             return
         }
-        for source in files where source.pathExtension == "png" || source.lastPathComponent == "manifest.json" {
+        for source in candidates where source.pathExtension == "png" || source.lastPathComponent == "manifest.json" {
             let destination = artDir.appendingPathComponent(source.lastPathComponent)
-            guard !FileManager.default.fileExists(atPath: destination.path) else { continue }
+            guard !fm.fileExists(atPath: destination.path) else { continue }
             do {
-                try FileManager.default.copyItem(at: source, to: destination)
+                try fm.copyItem(at: source, to: destination)
             } catch {
                 wglog("安装插画失败：\(source.lastPathComponent)：\(error.localizedDescription)")
             }

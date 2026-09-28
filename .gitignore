@@ -3,3 +3,6 @@ build/
 .swiftpm/
 .DS_Store
 *.xcuserstate
+DerivedData/
+*.xcodeproj/xcuserdata/
+.video_agent/

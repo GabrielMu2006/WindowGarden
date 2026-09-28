@@ -9,7 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var autoLaunchItem: NSMenuItem!
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        Store.installBundledArt(from: Bundle.module)
+        Store.installBundledArt(from: Bundle.main)
         controller = GardenController()
         installSignalHandlers()
         setupStatusItem()
