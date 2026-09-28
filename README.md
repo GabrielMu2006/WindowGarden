@@ -29,19 +29,37 @@ open /Applications/WindowGarden.app   # 启动引擎（菜单栏出现叶子图�
 - **昼夜**：跟随本地时间（清晨 05:30 / 白天 08:00 / 黄昏 17:30 / 夜晚 19:30），夜晚有星星、萤火虫与月见草柔光。
 - **访客**：你离开约 5 分钟后，组件里会出现小动物；回来后它们散去。
 - **小尺寸**自动展示最成熟的 3 株（夜晚会换上会发光的月见草）；**中尺寸**展示全部 6 株。
-- **菜单栏**：`刷新组件`、`开机自动启动`、`关于`、`退出`（退出＝花园暂停生长）。
+- **菜单栏**：`刷新组件`、`打开插画文件夹`、`开机自动启动`、`关于`、`退出`（退出＝花园暂停生长）。
 
-## 插画与换装
+## 自定义插画
 
-应用内置 36 张透明 PNG 手绘水彩插画（六种植物各四阶段、三只访客、七种环境元素、地面与菜单栏图标）。首次启动会将它们复制到本地插画目录，不覆盖已有的自定义文件。
+花园的所有图样都是普通的 PNG 文件，**替换即生效**——这是产品的正式接口，无需改代码、无需重新构建。
 
-自定义时，按 [ART_PROMPTS.md](ART_PROMPTS.md) 的命名替换此目录中的 PNG：
+**三步换装：**
 
-```
-~/Library/Application Support/WindowGarden/art/
-```
+1. 菜单栏叶子图标 → **打开插画文件夹**（即 `~/Library/Application Support/WindowGarden/art/`）
+2. 用同名 PNG 覆盖想换的图
+3. 等几秒自动生效；急的话点菜单栏「刷新组件」立即请求刷新
 
-从菜单栏点「刷新组件」即可请求更新，无需改代码。删除 `~/Library/Application Support/WindowGarden/state.json` 可重置花园。
+**命名与规格：**
+
+| 类别 | 文件名模式 | 数量 | 规格建议 |
+| --- | --- | --- | --- |
+| 植物 | `plant_<物种>_<1..4>.png` | 6 物种 × 4 阶段 | 透明底，根部贴齐画布底边，竖构图（如 384×1024） |
+| 访客动物 | `animal_<cat/bird/hedgehog>.png` | 3 | 透明底，脚部贴底，**面朝左**（程序按行走方向自动翻转） |
+| 环境元素 | `ambient_<sun/moon/cloud/star/firefly/grass/stone>.png` | 7 | 透明底，居中或贴底 |
+| 地面土带 | `bg_ground.png` | 可选 | 横条构图，顶部草缘；缺省用程序绘制的纯色地面 |
+| 菜单栏图标 | `menubar_leaf.png` | 可选 | 深色单色剪影（作模板图渲染）；缺省用系统叶子符号 |
+
+物种代码：`daisy` 雏菊 / `lavender` 薰衣草 / `tulip` 郁金香 / `lilyvalley` 铃兰 / `foxglove` 毛地黄 / `moonflower` 月见草（夜晚发光）。完整清单见 [Sources/WindowGarden/Art/manifest.json](Sources/WindowGarden/Art/manifest.json) 或 [ART_PROMPTS.md](ART_PROMPTS.md)。
+
+**机制说明：**
+
+- 应用内置的同名插画只是**首次启动的默认素材**，复制到本地目录后不会再覆盖你的自定义文件
+- 渲染时按高度缩放、按底边对齐；昼夜氛围由程序叠加色调，无需为每个时段单独出图
+- 重置：删除 `~/Library/Application Support/WindowGarden/state.json`（花园进度）或整个 `WindowGarden` 目录（含插画）
+- 可选质检：`swift scripts/check_art.swift` 批量检查透明底、贴底对齐与白底残留
+- 想用 AI 生成整套素材：[ART_PROMPTS.md](ART_PROMPTS.md) 内含全部生成提示词
 
 ## 开发
 
@@ -68,3 +86,7 @@ WG_STATE_DIR=/tmp/wg_test make_app.sh …          # 隔离状态目录
 2. 长按桌面上的花园组件 → 移除
 3. 菜单栏 → 退出，删除 `/Applications/WindowGarden.app`
 4. 删除 `~/Library/Application Support/WindowGarden/`
+
+## 许可证
+
+[MIT](LICENSE)。随仓库分发的内置插画由 GPT 生成，与代码同许可分发。

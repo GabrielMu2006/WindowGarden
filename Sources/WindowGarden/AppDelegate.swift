@@ -44,6 +44,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let refresh = NSMenuItem(title: "刷新组件", action: #selector(refreshWidgets), keyEquivalent: "r")
         refresh.target = self
+        let openArt = NSMenuItem(title: "打开插画文件夹", action: #selector(openArtFolder), keyEquivalent: "")
+        openArt.target = self
         autoLaunchItem = NSMenuItem(title: "开机自动启动", action: #selector(toggleAutoLaunch), keyEquivalent: "")
         autoLaunchItem.target = self
         let about = NSMenuItem(title: "关于 Window Garden", action: #selector(about), keyEquivalent: "")
@@ -52,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         quit.target = self
 
         menu.addItem(refresh)
+        menu.addItem(openArt)
         menu.addItem(autoLaunchItem)
         menu.addItem(.separator())
         menu.addItem(about)
@@ -65,6 +68,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @objc private func refreshWidgets() {
         controller.reloadWidgets()
         wglog("已手动请求组件刷新")
+    }
+
+    @objc private func openArtFolder() {
+        Store.ensureDirs()
+        NSWorkspace.shared.open(Store.artDir)
     }
 
     @objc private func toggleAutoLaunch() { controller.toggleAutoLaunch() }
