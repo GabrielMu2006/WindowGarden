@@ -5,11 +5,17 @@
 set -e
 cd "$(dirname "$0")/.."
 
+# App Group entitlement 会触发 Xcode 的描述文件检查（本地 ad-hoc 签名无法通过），
+# 因此构建时跳过签名，构建完成后用 codesign 手动签（appex 需带 entitlements，先签内层）。
 xcodebuild -project WindowGarden.xcodeproj -scheme WindowGarden -configuration Release \
-  -derivedDataPath build/xcode build -quiet
+  -derivedDataPath build/xcode CODE_SIGNING_ALLOWED=NO build -quiet
 
 APP="build/xcode/Build/Products/Release/WindowGarden.app"
 [ -d "$APP" ] || { echo "构建产物缺失"; exit 1; }
+
+codesign --force --sign - --entitlements WidgetEntitlements.plist \
+  "$APP/Contents/PlugIns/WindowGardenWidget.appex"
+codesign --force --sign - "$APP"
 
 # 注册到 LaunchServices，让组件出现在系统组件库
 LSREG="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"

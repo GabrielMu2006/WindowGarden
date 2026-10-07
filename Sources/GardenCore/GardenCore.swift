@@ -158,12 +158,61 @@ public struct PersistedState: Codable {
 // MARK: - 存储与应用支持目录
 
 public enum Store {
-    public static var rootDir: URL {
+    /// 引擎（非沙盒）与组件（沙盒）共享状态与插画的 App Group。
+    /// 沙盒进程读不到 ~/Library/Application Support：Foundation 会把该目录
+    /// 重定向到组件自己的容器，而 temporary-exception 对 ad-hoc/开发签名不生效，
+    /// 所以共享只能走 App Group 容器。
+    public static let appGroupID = "group.com.windowgarden.app"
+
+    public static var rootDir: URL { resolvedRootDir }
+
+    private static let resolvedRootDir: URL = {
         if let p = ProcessInfo.processInfo.environment["WG_STATE_DIR"], !p.isEmpty {
             return URL(fileURLWithPath: p, isDirectory: true)
         }
+        if let group = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
+            return group
+        }
+        wglog("无法解析 App Group 容器，回退到 Application Support（沙盒组件将读不到状态）")
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return base.appendingPathComponent("WindowGarden", isDirectory: true)
+    }()
+
+    /// 仅由菜单栏引擎启动时调用：把旧版 ~/Library/Application Support/WindowGarden
+    /// 下的状态与插画整体搬入 App Group 容器，保住生长进度与已自定义的插画。
+    public static func migrateLegacyIfNeeded() {
+        let fm = FileManager.default
+        if ProcessInfo.processInfo.environment["WG_STATE_DIR"] != nil { return }
+        let legacy = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("WindowGarden", isDirectory: true)
+        guard fm.fileExists(atPath: legacy.path) else { return }
+
+        let legacyState = legacy.appendingPathComponent("state.json")
+        if fm.fileExists(atPath: legacyState.path) {
+            do {
+                if !fm.fileExists(atPath: stateURL.path) {
+                    try fm.moveItem(at: legacyState, to: stateURL)
+                }
+            } catch {
+                wglog("迁移 state.json 失败：\(error.localizedDescription)")
+            }
+        }
+        let legacyArt = legacy.appendingPathComponent("art", isDirectory: true)
+        if fm.fileExists(atPath: legacyArt.path) && !fm.fileExists(atPath: artDir.path) {
+            do {
+                try fm.moveItem(at: legacyArt, to: artDir)
+            } catch {
+                wglog("迁移插画目录失败：\(error.localizedDescription)")
+            }
+        }
+        let leftovers = ((try? fm.contentsOfDirectory(at: legacy, includingPropertiesForKeys: nil)) ?? [])
+            .map(\.lastPathComponent)
+        if leftovers.isEmpty {
+            try? fm.removeItem(at: legacy)
+            wglog("已把旧版数据迁入 \(rootDir.path)")
+        } else {
+            wglog("旧目录 \(legacy.path) 尚有未迁移内容，已保留：\(leftovers.joined(separator: "、"))")
+        }
     }
 
     public static var stateURL: URL { rootDir.appendingPathComponent("state.json") }

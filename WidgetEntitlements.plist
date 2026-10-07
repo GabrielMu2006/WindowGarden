@@ -4,10 +4,13 @@
 <dict>
     <key>com.apple.security.app-sandbox</key>
     <true/>
-    <!-- 沙盒化组件读取引擎写入的共享状态与插画目录（非 App Store 分发，无需 App Group） -->
-    <key>com.apple.security.temporary-exception.files.home-relative-path.read-only</key>
+    <!-- 沙盒化组件经 App Group 容器读取引擎写入的共享状态与插画。
+         不能用 temporary-exception 读 ~/Library/Application Support：
+         Foundation 在沙盒内会把该目录重定向到组件自己的容器，
+         且 temporary-exception 对 ad-hoc/开发签名不生效（实测 EPERM）。 -->
+    <key>com.apple.security.application-groups</key>
     <array>
-        <string>Library/Application Support/WindowGarden/</string>
+        <string>group.com.windowgarden.app</string>
     </array>
 </dict>
 </plist>

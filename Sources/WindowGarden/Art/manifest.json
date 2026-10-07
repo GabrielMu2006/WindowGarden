@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "notes": "资产清单（R-007）。file 为相对于 ~/Library/Application Support/WindowGarden/art/ 的文件名。缺失的文件由程序绘制占位；放入文件后数秒内自动换装，代码零改动。",
+  "notes": "资产清单（R-007）。file 为相对于 App Group 容器内 art/ 目录（~/Library/Group Containers/group.com.windowgarden.app/art/）的文件名。缺失的文件由程序绘制占位；放入文件后数秒内自动换装，代码零改动。",
   "elements": [
     { "key": "plant.daisy.1",      "file": "plant_daisy_1.png",      "zh": "雏菊·幼苗" },
     { "key": "plant.daisy.2",      "file": "plant_daisy_2.png",      "zh": "雏菊·成长" },

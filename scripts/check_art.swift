@@ -6,7 +6,8 @@ import ImageIO
 import UniformTypeIdentifiers
 
 let fm = FileManager.default
-let dir = fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/WindowGarden/art")
+let dir = ProcessInfo.processInfo.environment["WG_STATE_DIR"].map { URL(fileURLWithPath: $0, isDirectory: true).appendingPathComponent("art") }
+    ?? fm.containerURL(forSecurityApplicationGroupIdentifier: "group.com.windowgarden.app")!.appendingPathComponent("art")
 let files = ((try? fm.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil))?
     .filter { $0.pathExtension.lowercased() == "png" }
     .sorted { $0.lastPathComponent < $1.lastPathComponent }) ?? []
